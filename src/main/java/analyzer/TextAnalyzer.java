@@ -39,7 +39,7 @@ public class TextAnalyzer {
         return wordFrequencies;
     }
 
-    public Map<String, Integer> removeStopWords(Map<String,Integer> countedWords) throws IOException {
+    public Set<String> loadStopWords() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader("src/resources/stopwords.txt"));
         HashSet<String> stopWords = new HashSet<>();
 
@@ -52,8 +52,11 @@ public class TextAnalyzer {
 
         reader.close();
 
-        countedWords.keySet().removeIf(stopWords::contains);
+        return stopWords;
+    }
 
+    public Map<String, Integer> removeStopWords(Map<String,Integer> countedWords, Set<String> stopWords){
+        countedWords.keySet().removeIf(stopWords::contains);
         return countedWords;
     }
 
@@ -79,13 +82,11 @@ public class TextAnalyzer {
     public AnalysisResult analyze(String path, int topN) throws IOException {
         String text = loadFile(path);
         Map<String, Integer> allWords = countWords(text);
-        Map<String, Integer> filteredWords = removeStopWords(new HashMap<>(allWords));
+        Set<String> stopWords = loadStopWords();
+        Map<String, Integer> filteredWords = removeStopWords(new HashMap<>(allWords), stopWords);
         Map<String, Integer> sortedFiltered = sortByComparator(filteredWords);
 
         return new AnalysisResult(allWords, sortedFiltered, topN);
     }
-
-
-
 
 }
