@@ -1,0 +1,188 @@
+BufferedReader is a class which simplifies reading text from a character input stream. It buffers the characters in order to enable efficient reading of text data.
+
+In this tutorial, we’re going to look at how to use the BufferedReader class.
+
+2. When to Use BufferedReader
+In general, BufferedReader comes in handy if we want to read text from any kind of input source whether that be files, sockets, or something else.
+
+Simply put, it enables us to minimize the number of I/O operations by reading chunks of characters and storing them in an internal buffer. While the buffer has data, the reader will read from it instead of directly from the underlying stream.
+
+2.1. Buffering Another Reader
+Like most of the Java I/O classes, BufferedReader implements Decorator pattern, meaning it expects a Reader in its constructor. In this way, it enables us to flexibly extend an instance of a Reader implementation with buffering functionality:
+BufferedReader reader =
+  new BufferedReader(new FileReader("src/main/resources/input.txt"));
+Copy
+But, if buffering doesn’t matter to us we could just use a FileReader directly:
+
+FileReader reader =
+  new FileReader("src/main/resources/input.txt");
+Copy
+In addition to buffering, BufferedReader also provides some nice helper functions for reading files line-by-line. So, even though it may appear simpler to use FileReader directly, BufferedReader can be a big help.
+
+2.2. Buffering a Stream
+In general, we can configure BufferedReader to take any kind of input stream as an underlying source. We can do it using InputStreamReader and wrapping it in the constructor:
+
+BufferedReader reader =
+  new BufferedReader(new InputStreamReader(System.in));
+Copy
+In the above example, we are reading from System.in which typically corresponds to the input from the keyboard. Similarly, we could pass an input stream for reading from a socket, file or any imaginable type of textual input. The only prerequisite is that there is a suitable InputStream implementation for it.
+
+2.3. BufferedReader vs Scanner
+As an alternative, we could use the Scanner class to achieve the same functionality as with BufferedReader.
+However, there are significant differences between these two classes which can make them either more or less convenient for us, depending on our use case:
+
+BufferedReader is synchronized (thread-safe) while Scanner is not
+Scanner can parse primitive types and strings using regular expressions
+BufferedReader allows for changing the size of the buffer while Scanner has a fixed buffer size
+BufferedReader has a larger default buffer size
+Scanner hides IOException, while BufferedReader forces us to handle it
+BufferedReader is usually faster than Scanner because it only reads the data without parsing it
+With these in mind, if we are parsing individual tokens in a file, then Scanner will feel a bit more natural than BufferedReader. But, just reading a line at a time is where BufferedReader shines.
+
+If needed, we also have a guide on Scanner as well.
+
+3. Reading Text With BufferedReader
+Let’s go through the entire process of building, using and destroying a BufferReader properly to read from a text file.
+
+3.1. Initializing a BufferedReader
+Firstly, let’s create a BufferedReader using its BufferedReader(Reader) constructor:
+BufferedReader reader =
+  new BufferedReader(new FileReader("src/main/resources/input.txt"));
+Copy
+Wrapping the FileReader like this is a nice way to add buffering as an aspect to other readers.
+
+By default, this will use a buffer of 8 KB. However, if we want to buffer smaller or larger blocks, we can use the BufferedReader(Reader, int) constructor:
+
+BufferedReader reader =
+  new BufferedReader(new FileReader("src/main/resources/input.txt")), 16384);
+Copy
+This will set the buffer size to 16384 bytes (16 KB).
+
+The optimal buffer size depends on factors like the type of the input stream and the hardware on which the code is running. For this reason, to achieve the ideal buffer size, we have to find it ourselves by experimenting.
+
+It’s best to use powers of 2 as buffer size since most hardware devices have a power of 2 as the block size.
+
+Finally, there is one more handy way to create a BufferedReader using the Files helper class from the java.nio API:
+
+BufferedReader reader =
+  Files.newBufferedReader(Paths.get("src/main/resources/input.txt"))
+Copy
+Creating it like this is a nice way to buffer if we want to read a file because we don’t have to manually create a FileReader first and then wrap it.
+
+3.2. Reading Line-by-Line
+Next, let’s read the content of the file using the readLine method:
+public String readAllLines(BufferedReader reader) throws IOException {
+    StringBuilder content = new StringBuilder();
+    String line;
+
+    while ((line = reader.readLine()) != null) {
+        content.append(line);
+        content.append(System.lineSeparator());
+    }
+
+    return content.toString();
+}
+Copy
+We can do the same thing as above using the lines method introduced in Java 8 a bit more simply:
+
+public String readAllLinesWithStream(BufferedReader reader) {
+    return reader.lines()
+      .collect(Collectors.joining(System.lineSeparator()));
+}
+Copy
+3.3. Closing the Stream
+After using the BufferedReader, we have to call its close() method to release any system resources associated with it. This is done automatically if we use a try-with-resources block:
+
+try (BufferedReader reader =
+       new BufferedReader(new FileReader("src/main/resources/input.txt"))) {
+    return readAllLines(reader);
+}
+Copy
+4. Other Useful Methods
+Now let’s focus on various useful methods available in BufferedReader.
+
+4.1. Reading a Single Character
+We can use the read() method to read a single character. Let’s read the whole content character-by-character until the end of the stream:
+
+public String readAllCharsOneByOne(BufferedReader reader) throws IOException {
+    StringBuilder content = new StringBuilder();
+
+    int value;
+    while ((value = reader.read()) != -1) {
+        content.append((char) value);
+    }
+
+    return content.toString();
+}
+Copy
+This will read the characters (returned as ASCII values), cast them to char and append them to the result. We repeat this until the end of the stream, which is indicated by the response value -1  from the read() method.
+
+4.2. Reading Multiple Characters
+If we want to read multiple characters at once, we can use the method read(char[] cbuf, int off, int len):
+
+public String readMultipleChars(BufferedReader reader) throws IOException {
+    int length;
+    char[] chars = new char[length];
+    int charsRead = reader.read(chars, 0, length);
+
+    String result;
+    if (charsRead != -1) {
+        result = new String(chars, 0, charsRead);
+    } else {
+        result = "";
+    }
+
+    return result;
+}
+Copy
+In the above code example, we’ll read up to 5 characters into a char array and construct a string from it. In the case that no characters were read in our read attempt (i.e. we’ve reached the end of the stream), we’ll simply return an empty string.
+
+4.3. Skipping Characters
+We can also skip a given number of characters by calling the skip(long n) method:
+@Test
+public void givenBufferedReader_whensSkipChars_thenOk() throws IOException {
+    StringBuilder result = new StringBuilder();
+
+    try (BufferedReader reader =
+           new BufferedReader(new StringReader("1__2__3__4__5"))) {
+        int value;
+        while ((value = reader.read()) != -1) {
+            result.append((char) value);
+            reader.skip(2L);
+        }
+    }
+
+    assertEquals("12345", result);
+}
+Copy
+In the above example, we read from an input string which contains numbers separated by two underscores. In order to construct a string containing only the numbers, we are skipping the underscores by calling the skip method.
+
+4.4. mark and reset
+We can use the mark(int readAheadLimit) and reset() methods to mark some position in the stream and return to it later. As a somewhat contrived example, let’s use mark() and reset() to ignore all whitespaces at the beginning of a stream:
+
+@Test
+public void givenBufferedReader_whenSkipsWhitespacesAtBeginning_thenOk()
+  throws IOException {
+    String result;
+
+    try (BufferedReader reader =
+           new BufferedReader(new StringReader("    Lorem ipsum dolor sit amet."))) {
+        do {
+            reader.mark(1);
+        } while(Character.isWhitespace(reader.read()))
+
+        reader.reset();
+        result = reader.readLine();
+    }
+
+    assertEquals("Lorem ipsum dolor sit amet.", result);
+}
+Copy
+In the above example, we use the mark() method to mark the position we just read. Giving it a value of 1 means only the code will remember the mark for one character forward. It’s handy here because, once we see our first non-whitespace character, we can go back and re-read that character without needing to reprocess the whole stream. Without having a mark, we’d lose the L in our final string.
+
+Note that because mark() can throw an UnsupportedOperationException, it’s pretty common to associate markSupported() with code that invokes mark(). Though, we don’t actually need it here. That’s because markSupported() always returns true for BufferedReader.
+
+Of course, we might be able to do the above a bit more elegantly in other ways, and indeed mark and reset aren’t very typical methods. They certainly come in handy, though, when there is a need to look ahead.
+
+5. Conclusion
+In this quick tutorial, we’ve learned how to read character input streams on a practical example using BufferedReader.
