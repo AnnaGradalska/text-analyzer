@@ -13,7 +13,7 @@ public class TextAnalyzer {
         String line = "";
         while((line = reader.readLine()) != null){
             if(!line.trim().isEmpty()){
-                text.append(line);
+                text.append(line).append(" ");
             }
         }
 
