@@ -3,10 +3,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,4 +74,65 @@ public class TextAnalyzerTest {
         assertTrue(stopWords.contains("and"));
     }
 
+    @Test
+    @Tag("integration")
+    void loadFile_shouldReturnTextWithoutEmptyLines() throws IOException{
+        String expected = "Hello world this is a test ";
+        String result = analyzer.loadFile("src/test/java/resources/testfile.txt");
+
+        assertEquals(expected, result);
+    }
+    
+    @Test
+    void sortByComparator_shouldreturnSortedMap(){
+        Map<String, Integer> testMap = new HashMap<>(Map.of(
+                "dog", 3,
+                "cat", 2,
+                "mouse",5
+        ));
+        
+        Map<String, Integer> expected = new LinkedHashMap<>(Map.of(
+                "mouse",5,
+                "dog", 3,
+                "cat", 2
+
+        ));
+        
+        testMap = analyzer.sortByComparator(testMap);
+        
+        assertEquals(expected, testMap);
+    }
+
+    @Test
+    void sortByComparator_shouldHandleEmptyMap() {
+        Map<String, Integer> input = new HashMap<>();
+
+        Map<String, Integer> result = analyzer.sortByComparator(input);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void sortByComparator_shouldHandleSingleElementMap() {
+        Map<String, Integer> input = Map.of("apple", 1);
+
+        Map<String, Integer> result = analyzer.sortByComparator(input);
+
+        assertEquals(1, result.size());
+        assertEquals(1, result.get("apple"));
+    }
+
+    @Test
+    void sortByComparator_shouldHandleEqualValues() {
+        Map<String, Integer> input = Map.of(
+                "a", 2,
+                "b", 2,
+                "c", 2
+        );
+
+        Map<String, Integer> result = analyzer.sortByComparator(input);
+
+        assertEquals(3, result.size());
+        result.values().forEach(value -> assertEquals(2, value));
+    }
 }
