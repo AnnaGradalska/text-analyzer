@@ -4,14 +4,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.*;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import analyzer.TextAnalyzer;
@@ -30,7 +24,14 @@ public class TextAnalyzerTest {
     }
 
     @Test
-    void removeStopWords_shouldRemoveCommonWords() throws IOException{
+    void countWords_shouldHandleEmptyString() {
+        Map<String, Integer> result = analyzer.countWords("");
+        assertTrue(result.isEmpty());
+    }
+
+
+    @Test
+    void removeStopWords_shouldRemoveCommonWords(){
         Map<String,Integer> input = Map.of(
                 "the",5,
                 "cat",3,
@@ -60,13 +61,19 @@ public class TextAnalyzerTest {
     }
 
     @Test
-    void analyze_shouldReturnTopTags() throws IOException {
-        AnalysisResult result = analyzer.analyze("src/test/java/resources/test.txt", 2);
+    void removeStopWords_shouldRemoveAllWords() {
+        Map<String, Integer> input = Map.of(
+                "the", 5,
+                "and", 3
+        );
 
-        assertEquals(2, result.getTopTags().size());
-        assertEquals("dog", result.getTopTags().get(0));
-        assertEquals("cat", result.getTopTags().get(1));
+        Set<String> stopWords = Set.of("the", "and");
+
+        Map<String, Integer> result = analyzer.removeStopWords(new HashMap<>(input), stopWords);
+
+        assertTrue(result.isEmpty());
     }
+
 
     @Test
     @Tag("integration")
@@ -139,4 +146,26 @@ public class TextAnalyzerTest {
         assertEquals(3, result.size());
         result.values().forEach(value -> assertEquals(2, value));
     }
+
+    @Test
+    @Tag("integration")
+    void analyze_shouldReturnExpectedTopTagsAndCounts() throws IOException {
+        AnalysisResult result = analyzer.analyze("src/test/java/resources/full-analysis.txt", 2);
+
+        List<String> topTags = result.getTopTags();
+
+        assertEquals(2, topTags.size());
+        assertEquals("quick", topTags.get(0));
+        assertEquals("fox", topTags.get(1));
+        assertTrue(result.getTotalWordCount() > 0);
+    }
+
+    @Test
+    @Tag("integration")
+    void analyze_shouldNotFailWhenTopNGreaterThanWordCount() throws IOException {
+        AnalysisResult result = analyzer.analyze("src/test/java/resources/small.txt", 10);
+
+        assertTrue(result.getTopTags().size() <= 10);
+    }
+
 }
